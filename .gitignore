@@ -1,0 +1,4 @@
+.DS_Store
+input_data/**
+results/**
+workflow/scripts/__pycache__

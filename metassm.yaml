@@ -1,0 +1,9 @@
+name: metassm
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - snakemake=8.28.0
+  - python=3.11
+  - pigz=2.8

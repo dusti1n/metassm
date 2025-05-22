@@ -1,0 +1,8 @@
+# Conda ENV; Canu[Nanopore, Hybrid]
+name: asmbcanu
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - canu=2.2

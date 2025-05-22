@@ -1,0 +1,9 @@
+# Conda ENV; Pre-Polish[Illumina, Nanopore, Hybrid]
+name: prepolish
+channels:
+  - bioconda
+  - defaults
+  - conda-forge
+dependencies:
+  - cutadapt=5.0
+  - porechop=0.2.4

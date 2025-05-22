@@ -1,0 +1,141 @@
+import pandas as pd
+import os
+from scripts.validate_config import validate_assembler
+
+# Load Dataframe
+units_file = os.path.join('results', config["general"]["output_dir"], config["general"]["units"])
+
+if not os.path.exists(units_file):
+    raise FileNotFoundError(f"The file {units_file} was not found. Please run the dataframe.py script first.")
+
+# Read Dataframe
+units = pd.read_csv(units_file, sep="\t", dtype=str)
+data_type = config["settings"]['data_type']
+
+# Define selected columns based on data_type
+data_type_columns = {
+    "Illumina": ["fq1", "fq2"],
+    "Hybrid": ["fq1", "fq2", "ONT"],
+    "Nanopore": ["ONT"]
+}
+selected_columns = data_type_columns.get(data_type)
+if selected_columns is None:
+    raise ValueError(f"Invalid data_type '{data_type}' specified in config.yaml.")
+
+# Build the sample_files dictionary
+sample_files = {
+    sample: {
+        col: units.loc[units["sample"] == sample, col].iloc[0]
+        for col in selected_columns if col in units and pd.notna(units.loc[units["sample"] == sample, col].iloc[0])
+    }
+    for sample in units["sample"].unique()
+}
+
+# Define active file types
+file_types = {
+    "Illumina": {"R1": True, "R2": True, "ONT": False},
+    "Nanopore": {"R1": False, "R2": False, "ONT": True},
+    "Hybrid": {"R1": True, "R2": True, "ONT": True}
+}.get(data_type, {})
+
+selected_suffixes = [key for key, value in file_types.items() if value]
+
+
+# CONFIG VALIDATION
+# Validate;MultiQC
+if config.get('quality', {}).get('multiqc', False) and data_type == "Nanopore":
+    print("Error: MultiQC and FastQC is not supported for 'Nanopore'. Set 'multiqc' to false in the configfile.")
+    sys.exit(1)
+
+# Validate;NanoPlot
+if config.get('quality', {}).get('nanoplot', False) and data_type == "Illumina":
+    print("Error: NanoPlot is not supported for 'Illumina'. Set 'nanoplot' to false in the configfile.")
+    sys.exit(1)
+
+# Validate;Assembler(scripts/validate_config.py)
+validate_assembler()
+
+
+# FINAL OUTPUT FILES
+rule all:
+    input:
+        # UNZIP DATA
+        # Output;Unzip(.fastq)
+        expand("results/{project_name}/unpacked/{sample}/{sample}_{suffix}.fastq",
+               sample=sample_files.keys(),
+               project_name=config["general"]["output_dir"],
+               suffix=selected_suffixes),
+
+        # QUALITY CONTROL
+        # Output;FastQC(.html)
+        expand("results/{project_name}/quality/{sample}/{sample}_{suffix}_fastqc.html",
+               sample=sample_files.keys(),
+               project_name=config["general"]["output_dir"],
+               suffix=["R1", "R2"]) if config["settings"]['data_type'] in ["Illumina", "Hybrid"] and config["quality"]["multiqc"] else[],
+
+        # Output;MultiQC(.html)
+        os.path.join("results",config["general"]["output_dir"],"quality/multiqc/multiqc_report.html") if config["settings"]['data_type'] in ["Illumina", "Hybrid"] and config["quality"]["multiqc"] else [],
+
+        # Output;NanoPlot(.html)
+        expand("results/{project_name}/quality/{sample}/nanoplot/{sample}_{suffix}_nanoplot.html",
+               sample=sample_files.keys(),
+               project_name=config["general"]["output_dir"],
+               suffix=["ONT"]) if config["settings"]['data_type'] in ["Nanopore", "Hybrid"] and config["quality"]["nanoplot"] else[],
+
+        # POLISH DATA
+        # Output;Cutadapt(_R1_trimmed.fastq)
+        expand("results/{project_name}/filtered/cutadapt/{sample}/{sample}_R1_trimmed.fastq",
+               sample=sample_files.keys(),
+               project_name=config["general"]["output_dir"]) if config["settings"]['data_type'] in ["Illumina", "Hybrid"] else[],
+
+        # Output;Cutadapt(_R2_trimmed.fastq)
+        expand("results/{project_name}/filtered/cutadapt/{sample}/{sample}_R2_trimmed.fastq",
+               sample=sample_files.keys(),
+               project_name=config["general"]["output_dir"]) if config["settings"]['data_type'] in ["Illumina", "Hybrid"] else[],
+
+        # Output;Porechop(_trimmed.fastq)
+        expand("results/{project_name}/filtered/porechop/{sample}/{sample}_{suffix}_trimmed.fastq",
+               sample=sample_files.keys(),
+               project_name=config["general"]["output_dir"],
+               suffix=["ONT"]) if config["settings"]['data_type'] in ["Nanopore", "Hybrid"] else[],
+
+        # ASSEMBLER
+        # Output;Flye;{sample}_{suffix}_asmb.fasta
+        expand("results/{project_name}/assembles/flye/{sample}/{sample}_{suffix}_asmb.fasta",
+               sample=sample_files.keys(),
+               project_name=config["general"]["output_dir"],
+               suffix=["ONT"]) if config["settings"]['data_type'] in ["Nanopore", "Hybrid"] and config["assembler"]["flye"]["status"] else[],
+
+        # Output;Canu;{sample}_{suffix}.contigs.fasta
+        expand("results/{project_name}/assembles/canu/{sample}/{sample}_{suffix}.contigs.fasta",
+               sample=sample_files.keys(),
+               project_name=config["general"]["output_dir"],
+               suffix=["ONT"]) if config["settings"]['data_type'] in ["Nanopore", "Hybrid"] and config["assembler"]["canu"]["status"] else[],
+
+        # Output;Shasta;{sample}_{suffix}_asmb.fasta
+        expand("results/{project_name}/assembles/shasta/{sample}/{sample}_{suffix}_asmb.fasta",
+               sample=sample_files.keys(),
+               project_name=config["general"]["output_dir"],
+               suffix=["ONT"]) if config["settings"]['data_type'] in ["Nanopore", "Hybrid"] and config["assembler"]["shasta"]["status"] else[],
+
+        # Output;WTDBG2;{sample}_{suffix}_asmb.fasta
+        expand("results/{project_name}/assembles/wtdbg2/{sample}/{sample}_{suffix}_asmb.fasta",
+               sample=sample_files.keys(),
+               project_name=config["general"]["output_dir"],
+               suffix=["ONT"]) if config["settings"]['data_type'] in ["Nanopore", "Hybrid"] and config["assembler"]["wtdbg2"]["status"] else[],
+
+        # Output;SPAdes;HybridSPAdes;{sample}_asmb.fasta
+        expand("results/{project_name}/assembles/spades/{sample}/{sample}_asmb.fasta",
+               sample=sample_files.keys(),
+               project_name=config["general"]["output_dir"]) if config["settings"]['data_type'] in ["Illumina", "Hybrid"] and config["assembler"]["spades"]["status"] else[],
+
+
+# IMPORT RULES
+# Unzip data;Tools:pigz
+include: "rules/unzip.smk"
+# Quality control;Tools:fastqc,multiqc,nanoplot
+include: "rules/prequality.smk"
+# Polish data;Tools:cutadapt,porechop
+include: "rules/prepolish.smk"
+# Assemlber:Flye;Canu;Shasta;WTDBG2;SPAdes;HybridSPAdes;
+include: "rules/assemble.smk"

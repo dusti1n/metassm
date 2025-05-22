@@ -1,0 +1,8 @@
+# Conda ENV; WTDBG2[Nanopore, Hybrid]
+name: asmbwtdbg2
+channels:
+  - bioconda
+  - defaults
+  - conda-forge
+dependencies:
+  - wtdbg=2.5

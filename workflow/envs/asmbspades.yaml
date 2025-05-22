@@ -1,0 +1,9 @@
+# Conda ENV; SPAdes[Illumina, Hybrid]
+name: asmbspades
+channels:
+  - bioconda
+  - defaults
+  - conda-forge
+dependencies:
+  - spades=4.0.0
+  - numpy=2.2.3

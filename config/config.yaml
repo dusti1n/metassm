@@ -1,0 +1,53 @@
+# metassm; Config File
+# General settings for the pipeline
+general:
+  filename: input_data/s_cerevisiae_trimmed # Directory containing input data files
+  output_dir: s_cerevisiae # Name of output directory for results
+  units: units.tsv # Units file with sample metadata and file paths 
+
+# Set data type and resource limits
+settings:
+  data_type: Hybrid # Data type: Illumina, Nanopore, or Hybrid
+  threads: 12 # Number of CPU cores for processing
+  memory: 30000 # RAM in MB (1GB = 1000MB)
+  genome_size: "5m" # Set genome size
+
+# Quality settings for Illumina, Nanopore, or Hybrid data
+quality:
+  multiqc: true # FastQC and MultiQC (Illumina, Hybrid)
+  nanoplot: true # NanoPlot (Nanopore, Hybrid)
+
+# Cutadapt settings (Illumina, Hybrid)
+cutadapt:
+  min_length: 50 # Minimum read length
+  # Forward adapter (_R1)
+  adapter_r1: AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC
+  # Reverse adapter (_R2)
+  adapter_r2: AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT
+
+# Assembler settings for [Illumina], [Nanopore], and [Hybrid] data
+# IMPORTANT: Select at least one assembler for your chosen data type
+
+# ALLOWED ASSEMBLERS PER DATA TYPE (Max 4 per data type, min 1):
+# [Illumina]: SPAdes, MEGAHIT, ABySS, MaSuRCA
+# [Nanopore]: Flye, Canu, Shasta, WTDBG2
+# [Hybrid]: Flye, Canu, HybridSPAdes, Hifiasm
+assembler:
+# Flye[Nanopore, Hybrid]
+  flye:
+    status: false # Enable or disable FLYE
+    iterations: 2 # Polishing rounds (Higher accuracy: 5, Default: 2)
+# Canu[Nanopore, Hybrid]
+  canu:
+    status: false # Enable or disable CANU
+    stop_on_low_coverage: "5" # Canu defaults to 10 if not set
+    min_input_coverage: "" # Canu defaults to 0 if not set
+# Shasta[Nanopore]
+  shasta:
+    status: false # Enable or disable Shasta
+# WTDBG2[Nanopore]
+  wtdbg2:
+    status: false # Enable or disable WTDBG2
+# SPAdes;HybridSPAdes[Illumina, Hybrid]
+  spades:
+    status: true # Enable or disable SPAdes

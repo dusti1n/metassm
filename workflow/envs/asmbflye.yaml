@@ -1,0 +1,9 @@
+# Conda ENV; Flye[Nanopore, Hybrid]
+name: asmbflye
+channels:
+  - bioconda
+  - defaults
+  - conda-forge
+dependencies:
+  - flye=2.9.5
+  - numpy=2.2.3

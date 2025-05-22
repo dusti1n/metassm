@@ -1,0 +1,8 @@
+# Conda ENV; Shasta[Nanopore, Hybrid]
+name: asmbshasta
+channels:
+  - bioconda
+  - defaults
+  - conda-forge
+dependencies:
+  - shasta=0.14.0

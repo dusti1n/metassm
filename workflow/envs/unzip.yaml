@@ -1,0 +1,8 @@
+# Conda ENV; Unzip[Illumina, Nanopore, Hybrid]
+name: unzip
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - pigz=2.8

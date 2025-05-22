@@ -1,0 +1,10 @@
+# Conda ENV; Pre-Quality[Illumina, Nanopore, Hybrid]
+name: prequality
+channels:
+  - bioconda
+  - defaults
+  - conda-forge
+dependencies:
+  - nanoplot=1.44.1
+  - fastqc=0.12.1
+  - multiqc=1.25.2
